@@ -1,14 +1,19 @@
 # ship-loop
 
-A [Claude Code](https://code.claude.com) skill: a disciplined loop for taking a **substantial
-code change from request to merged-and-verified** — research → converge → reproduce → pin with a
-test → implement → adversarially self-audit → verify with the project's own gates → PR →
-wait-for-green → merge → confirm it landed.
+A [Claude Code](https://code.claude.com) skill: a disciplined loop for taking a **substantial code
+change from request to merged-and-verified** — research → converge → reproduce → pin with a test →
+implement → try to break it → verify with the project's own gates → PR → wait-for-green → merge →
+confirm it landed.
 
-It is deliberately opinionated and tuned for capable (Opus-class) models: it contains only the
-disciplines a strong model does *unreliably by default* — the "teeth" — not generic engineering
-etiquette. It's **project-agnostic**: it teaches discovering and running *your* repo's own gates
-rather than hardcoding any toolchain.
+Its one organizing idea is **make a claim, then try to break it** — Karl Popper's *conjecture and
+refutation*, pointed at shipping code. Reproduce the bug instead of theorizing about it; watch a
+test fail before you trust it passing; hand the change to reviewers whose only job is to break it.
+What survives a real attempt to break it is what you ship.
+
+It's deliberately opinionated and tuned for capable (Opus-class) models: it contains only the
+disciplines a strong model does *unreliably by default*, not general engineering etiquette. And
+it's **project-agnostic** — it teaches you to discover and run *your* repo's own gates rather than
+hardcoding any toolchain.
 
 > Honest caveats: the name under-sells the audit (which is the sharpest part), and this is an
 > opinionated distillation of one engineer's implement→audit→ship workflow, not a neutral
@@ -16,30 +21,33 @@ rather than hardcoding any toolchain.
 
 ## The loop
 
-1. **Map the blast radius; research the approach** — grep every caller, enumerate every schema
-   reference, and research the SOTA / prior art before committing to a first instinct.
-2. **Converge on the optimal solution before writing code** — the simplest fix at the root
-   cause; default to a reasoned decision, not a menu of questions.
+1. **Find everything the change touches; research the approach** — grep every caller, enumerate
+   every schema reference, and look at how mature tools solve this before trusting your first
+   instinct.
+2. **Decide the best solution before writing code** — the simplest fix at the root cause; make the
+   call yourself instead of handing over a menu of questions.
 3. **Reproduce before you theorize** — measure the real values; don't guess.
-4. **Pin the change with a test** (red→green), then implement to the grain.
-5. **Verify with the project's own gates**, cheap-first (typecheck/lint before the slow e2e).
-6. **Audit adversarially** with independent refute-reviewers — the gate. For a *control* (worth =
-   a guarantee against a named adversary), also refute its **design** — trust boundary, fail-open,
-   every-path mediation, property-vs-proxy, cost, silent-failure — since a clean refute pass
-   validates the frame, not the design.
-7. **Ship on the user's cadence** — branch → PR → wait-for-*actually*-green → merge → sync.
-8. **Confirm it landed; record the one footgun** a future session could re-introduce.
+4. **Pin the change with a test** (watch it fail, then pass), then implement to match the code
+   around it.
+5. **Verify with the project's own gates**, cheapest first (typecheck and lint before the slow
+   end-to-end suite).
+6. **Try to break your own change** with independent refute-reviewers — the gate. If the change is
+   a *control* (its worth is a guarantee against someone you can name), also break its **design**,
+   not just its code: a clean pass from same-framed refuters validates the framing, not the design.
+7. **Ship on the user's cadence** — branch → PR → wait for CI to *actually* go green → merge → sync.
+8. **Confirm it landed; record the one trap** a future session could fall back into.
 
 Three references load on demand:
-- [`references/audit.md`](references/audit.md) — the adversarial self-audit playbook (refute
-  angles, CONFIRMED/PLAUSIBLE/REFUTED, a stop condition, fix-vs-accept by proportion).
+- [`references/audit.md`](references/audit.md) — the playbook for breaking your own change (refute
+  angles, CONFIRMED/PLAUSIBLE/REFUTED, when to stop, fix-vs-accept by proportion).
 - [`references/control-review.md`](references/control-review.md) — the design-level review for a
-  *control* (a change whose worth is a guarantee against a named adversary): trust-the-input,
-  can-they-turn-it-off, is-every-path-mediated, property-vs-proxy, cost, is-a-defeat-visible —
-  grounded in Saltzer-Schroeder / reference-monitor / STRIDE and framed as falsification. The
-  design flaws diff-refute systematically misses.
-- [`references/ship.md`](references/ship.md) — project-agnostic ship mechanics (gate discovery,
-  a PR template, failing-test triage, generated-artifact-drift, verify-after-merge).
+  *control* (a change whose worth is a guarantee against someone you can name): does it trust the
+  right input, can they turn it off, is every path covered, does it check the real thing or a
+  stand-in, what does it cost, is a defeat visible. Grounded in Saltzer & Schroeder / the reference
+  monitor / STRIDE and framed as falsification — the design flaws that breaking the diff
+  line-by-line misses.
+- [`references/ship.md`](references/ship.md) — project-agnostic ship mechanics (finding the gates,
+  a PR template, failing-test triage, generated-artifact drift, verifying after merge).
 
 ## Install
 

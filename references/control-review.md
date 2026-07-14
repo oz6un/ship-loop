@@ -1,75 +1,85 @@
-# Auditing a control — refute its design, not just its diff
+# Auditing a control — try to break its design, not just its code
 
-**When this applies.** A **control** is a change whose *worth is a guarantee* — "X can't
-happen," "only Y may," "at most Z" — with a **threat model**: you can name the adversary (or the
-untrusted input) *and* what's lost when it's defeated. Can't name both? It's ordinary
-validation, not a control — refute the diff ([audit.md](audit.md)) and move on. Don't run this on
-internal invariants, format checks, or defensive assertions that have no adversary.
+**When this applies.** A **control** is a change whose worth is a *guarantee* — "X can't happen,"
+"only Y may," "at most Z" — against someone you can name. To qualify, you have to be able to say
+two things: who the adversary is (or which input is untrusted), *and* what is lost when the
+guarantee is defeated. If you can't say both, it isn't a control, just ordinary validation —
+refute the diff ([audit.md](audit.md)) and move on. Don't run this on internal invariants, format
+checks, or defensive assertions that have no adversary.
 
-The refute angles in [audit.md](audit.md) hunt bugs on the changed lines; a control can pass all
-of them and still be **broken by design** — the whole apparatus can return "clean" on a
-guarantee that a single *"where does this value come from?"* breaks. So each check below is a
-**falsification**: state the guarantee, then actively try to construct the case where it fails —
-a control you *tried and failed* to break is earned; one you only eyeballed is assumed. This is
-the canon (Saltzer & Schroeder; the reference monitor; STRIDE) distilled to what a strong model
-skips by default.
+The refute angles in [audit.md](audit.md) hunt for bugs on the lines you changed. A control can
+pass every one of them and still be **broken by design** — the whole review comes back "clean" on
+a guarantee that a single question, *"where does this value actually come from?"*, would have
+broken. So treat each check below as an attempt to *falsify* the guarantee: state it out loud,
+then actively try to build the case where it fails. A control you *tried and failed* to break is
+earned; one you only looked over is merely assumed. These seven checks are the long-established
+security canon (Saltzer & Schroeder's design principles; the reference monitor; STRIDE) reduced to
+the parts a strong model skips by default.
 
-**1 — Trust the input.** *Claim:* every input the decision reads originates on the trusted side.
-*Refute:* trace each to its producer — refuted the instant one comes from the party the control
-is meant to constrain. A rate limit keyed off a client-set header, a role read from an unverified
-token, an order total echoed back by the client, a min-output quoted by the swap provider you're
-guarding against — each is the adversary's number wearing a check's clothes. *(never-trust-the-client;
-confused deputy.)*
+**1 — Does it trust the right input?** *The guarantee:* every value the decision reads comes from
+the trusted side. *Try to break it:* trace each input back to whoever produced it. The guarantee
+fails the moment one of them comes from the very party the control is meant to restrain — a rate
+limit keyed on a client-set header, a role read from a token nobody verified, an order total the
+client sent back to you. Each is the adversary's own number dressed up as a check. *(Never trust
+the client; the confused-deputy problem.)*
 
-**2 — Can they turn it off?** *Claim:* the adversary can't reach the failure branch. *Refute:*
-name what the check does when its dependency is missing / errors / empty, then try to make the
-adversary trigger it — stall the datastore the limiter reads (→ `allow`), error the JWKS the auth
-catch-block falls through on (→ `next()`), exhaust a count limit, race a timeout, poison the
-cache, force the revert. **Fail-open is a bypass the moment the failure is inducible; fail-closed
-is a DoS if benign failures are common** — pick one, justify it against the *real* failure
-distribution, and prove the adversary can't force the losing side. (A fix that turns a
-false-reject into fail-open has traded a nuisance for a bypass.) *(fail-safe defaults.)*
+**2 — Can the adversary switch it off?** *The guarantee:* the adversary can't reach the failure
+branch. *Try to break it:* say plainly what the check does when the thing it depends on is
+missing, errors, or comes back empty — then try to make the adversary cause exactly that. Stall
+the datastore the limiter reads (does it then `allow`?); make the key lookup the auth check relies
+on error so its catch-block falls through (does it call `next()`?); exhaust a counter; race a
+timeout; poison a cache. **Failing open is a bypass the moment the failure can be induced; failing
+closed is a denial of service if harmless failures are common.** Pick one on purpose, justify it
+against how the dependency *actually* fails, and show the adversary can't force the losing side. (A
+fix that turns an annoying false-reject into fail-open has traded a nuisance for a bypass.)
+*(Fail-safe defaults.)*
 
-**3 — Is every path mediated?** *Claim:* this control sits on the *only* route to the asset.
-*Refute:* find a second, unmediated route — another endpoint, a cache or replica, a retry queue,
-a batch job, an admin or internal API — that reaches the same asset without passing this check. A
-guarded front door is worth nothing while a side door is open. *(complete mediation / reference
-monitor.)*
+**3 — Is every path covered?** *The guarantee:* this control sits on the *only* route to the thing
+it protects. *Try to break it:* find a second route that skips it — another endpoint, a cache or
+read-replica, a retry queue, a batch job, an internal or admin API — that reaches the same thing
+without passing the check. A locked front door is worth nothing while a side door stands open.
+*(Complete mediation; the reference monitor.)*
 
-**4 — Property, not proxy — measured when it counts.** *Claim:* the code checks property P, on
-the state P will act on. *Refute:* find one state where the proxy reads OK while P is false —
-row-exists ≠ settled (a `pending` row counted as done), request-count ≠ resource-cost, key-match ≠
-same-variant, unique-bytes ≠ same-identity (`Alice@x` vs `alice@x`), 200 ≠ durable commit,
-account-present ≠ authorized, balance-delta ≠ provenance (a refund / self-transfer moves the
-number without delivering value). Then mind the gap between check-time and use-time: a dry-run or
-simulation is not the committed execution. *(STRIDE-spoofing; TOCTOU / CWE-367.)*
+**4 — Does it check the real thing, or a stand-in?** *The guarantee:* the code checks the actual
+property it cares about, on the actual state it will act on. *Try to break it:* find one state
+where the stand-in looks fine but the real property is false. A row exists, but it's still
+`pending`, not settled. The request count is low, but each request is enormously expensive. Two
+keys match, but they point at different variants. Two strings look equal, but `Alice@x` and
+`alice@x` are different identities. A `200` came back, but nothing was durably committed. An
+account is present, but it was never authorized. Then mind the gap between when you check and when
+you act: a dry run or simulation is not the real, committed execution. *(STRIDE spoofing;
+time-of-check to time-of-use, CWE-367.)*
 
-**5 — What does it cost — latency and complexity?** *Claim:* the cost is affordable on the path
-it runs. *Refute:* put the number on it (added round-trips × latency, false-reject rate) and find
-the load or input that blows the budget or makes users route around it — a freshness re-check
-that hits origin on every cache hit has deleted the cache's reason to exist. And ask: is it
-**simple enough to be verifiably correct?** A control too complex to audit hides the very design
-bug you're hunting. *(psychological acceptability; economy of mechanism.)*
+**5 — What does it cost, in latency and complexity?** *The guarantee:* the cost is affordable on
+the path where it runs. *Try to break it:* put a real number on it — added round-trips times their
+latency, plus the false-reject rate — and find the load or the input that blows the budget or
+makes people route around the control. A freshness re-check that calls the origin on every cache
+hit has quietly deleted the reason the cache exists. Then ask the other half: **is it simple
+enough to be checked by eye?** A control too complex to audit is hiding the exact design bug you're
+looking for. *(Psychological acceptability; economy of mechanism.)*
 
-**6 — If it fails or is bypassed, do you know — and how much does it grant?** *Claim:* a defeat is
-visible and contained. *Refute:* check the deny / fail / bypass path is logged, attributable, and
-alertable (prevention with no detection is blind exactly when it's attacked), and bound what the
-holder can do *after* it fails — least privilege caps the blast radius. *(compromise recording;
-STRIDE-repudiation; least privilege.)*
+**6 — If it fails or is bypassed, will you know — and how much does a defeat grant?** *The
+guarantee:* a defeat is both visible and contained. *Try to break it:* check that the deny, fail,
+and bypass paths are actually logged, attributable to someone, and able to raise an alert —
+prevention with no detection is blind exactly when it's under attack. Then bound what the holder
+can do *after* the control fails: least privilege is what keeps one defeat from turning total.
+*(Recording compromises; STRIDE repudiation; least privilege.)*
 
-**7 — Does it deliver the claim?** If 1–6 surfaced a bypass, an adversary-controlled input, an
-unmediated path, a spoofable proxy, a disqualifying cost, or a silent failure, the honest verdict
-is *"the control does not do what it claims,"* not "code runs, tests pass." A control **sold as a
-guarantee** but bypassable by its target is worse than none sold that way — the claim invites
-reliance the design can't bear. The usual fix is to **downgrade the claim to fit the design**
-("best-effort layer," not "guarantee"), not delete the code: an honestly-labeled defense-in-depth
-layer that catches *other* cases is a net positive. What you must never ship is the claim the
-design can't back.
+**7 — Does it actually deliver what it claims?** If checks 1–6 turned up a bypass, an
+adversary-controlled input, an uncovered path, a spoofable stand-in, an unaffordable cost, or a
+silent failure, then the honest verdict is *"this control does not do what it claims"* — not "the
+code runs and the tests pass." A control **sold as a guarantee** but defeatable by its own target
+is worse than no control sold that way, because the claim invites people to rely on something the
+design can't support. The usual fix is not to delete the code but to **shrink the claim to fit the
+design** — call it a "best-effort layer," not a "guarantee." An honestly labeled extra layer that
+catches *other* cases is still a net gain. The one thing you must never ship is a guarantee the
+design can't keep.
 
-## Meta — a clean diff-refute pass does not validate a control
+## Meta — a clean refute pass does not, by itself, validate a control
 
-Same-framed refuters ("find a drain") returning nothing means *nothing was found in that frame*,
-not that the design is sound — the exact false confidence that ships broken controls. Three
-refuters and an audit can all come back "clean" on a control that §1 breaks in one line. For
-anything security- or safety-critical, §1–7 must pass **and** a differently-framed reviewer —
-ideally a human — must sign off before you report "clean."
+Reviewers who are all framed the same way ("find a way to break in") coming back empty means only
+that *nothing was found from that one angle* — not that the design is sound. This is the exact
+false confidence that ships broken controls: three refuters and a full audit can all report
+"clean" on a control that check 1 breaks in a single line. For anything security- or
+safety-critical, checks 1–7 must pass **and** a reviewer framed differently — ideally a human —
+must sign off before you report "clean."

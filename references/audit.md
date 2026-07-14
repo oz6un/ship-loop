@@ -1,8 +1,9 @@
 # The adversarial self-audit
 
-The gate. Its job is to *break* the change before a user or production does. Run it on
-substantial changes before calling them done, and again whenever the user says "audit,"
-"make sure," "harden," or "check it carefully."
+This is the gate, and it's the sharpest part of the loop — the refutation half of "make a claim,
+then try to break it." Its job is to **break the change before a user or production does.** Run it
+on any substantial change before you call it done, and again whenever the user says "audit," "make
+sure," "harden," or "check it carefully."
 
 ## Stance
 
@@ -36,10 +37,12 @@ substantial changes before calling them done, and again whenever the user says "
      named adversary): trust-the-input, fail-open, an unmediated second path, proxy-not-property,
      cost, silent-failure — the *design* flaws line-by-line refute can't see:
      **[control-review.md](control-review.md)**.
-3. **Verify each candidate, recall-biased**: CONFIRMED / PLAUSIBLE / REFUTED against the real
-   code. Refute only when constructible — impossible (a constant/type/guard, shown) or
-   factually wrong (quote the line). A realistic-but-rare path (error handler, cold cache,
-   falsy-zero, boundary off-by-one, retry storm) is PLAUSIBLE, not refuted.
+3. **Verify each candidate against the real code, and when in doubt keep it**: mark each
+   CONFIRMED / PLAUSIBLE / REFUTED. Only mark something REFUTED when you can actually show it's
+   dead — either the path is impossible (point to the constant, type, or guard that rules it out)
+   or the claim is factually wrong (quote the line). A path that's realistic but rare — an error
+   handler, a cold cache, a falsy zero, a boundary off-by-one, a retry storm — is PLAUSIBLE, not
+   refuted.
 4. **Severity by realistic likelihood × blast radius, and factor the platform.** Where agents
    act concurrently, a "two actors race" is realistic, not exotic; a two-human race on a niche
    surface may be negligible. Say which and why.
@@ -75,5 +78,6 @@ substantial changes before calling them done, and again whenever the user says "
 Fix real findings and re-verify (implement + gates). Report honestly: what you verified as
 correct (with specifics), the findings + severity, what you fixed, what you accepted on
 purpose. Don't say "all clear" before an in-flight independent pass returns — wait, then
-reconcile. And before relaying any clean bill, name the *class* of flaw the review could have
-caught: a pass from reviewers who could only see one class validates that class, not the change.
+reconcile. And before you pass along any clean bill of health, name the *class* of flaw the review
+was actually able to catch — a clean pass from reviewers who could only see one class of flaw tells
+you that class is clear, not that the whole change is.
