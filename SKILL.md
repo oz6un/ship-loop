@@ -48,12 +48,10 @@ and push/PR/merge happen on the **user's cadence**, never by assumption.
 
 6. **Audit adversarially — the gate, not a formality.** Spawn independent subagents told to
    **refute** your diff; keep what survives; decide fix-vs-accept by proportion; loop back to
-   step 4 when it's real. **If the change is a *control* — it claims to prevent / guarantee /
-   enforce / validate — refuting the diff is necessary but not sufficient: audit its *design* —
-   does it trust the right input, can the adversary turn it off (fail-open is a bypass if the
-   failure is inducible), does it measure the property or a spoofable proxy, what does it cost on
-   the hot path. A clean pass from same-framed refuters is not validation of a control:
-   **[references/control-review.md](references/control-review.md)**.** The refute angles, the
+   step 4 when it's real. **If the change is a *control* — its worth is a guarantee against an
+   adversary you can name — refuting the diff isn't enough; audit its *design* (a clean pass from
+   same-framed refuters validates the frame, not the design):
+   [references/control-review.md](references/control-review.md).** The refute angles, the
    claim-fidelity rule (a doc/PR line that overstates the code is a defect), when to stop, how to
    reconcile conflicts: **[references/audit.md](references/audit.md)**.
 

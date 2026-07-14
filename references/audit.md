@@ -9,6 +9,10 @@ substantial changes before calling them done, and again whenever the user says "
 - **Refute, don't confirm.** Hunt the input, state, timing, or platform that makes it wrong.
 - **Your own claims are in scope.** A comment, doc, or PR line that says more than the code
   does is a real defect — verify every "matches / always / can't happen" you wrote.
+- **A subagent's self-checked number is not verified.** A value a subagent both produced *and*
+  validated with its own harness is self-confirming — re-measure any load-bearing fact (a
+  threshold, a rate, a formula, a live config value) by a second, independent method before you
+  build on it.
 - **Independent eyes for large or subtle changes** — spawn subagents that don't share your
   rationalizations. For a small, self-contained change, a careful read against the spec is
   proportionate; match the audit's weight to the change.
@@ -28,13 +32,10 @@ substantial changes before calling them done, and again whenever the user says "
      keyed to the thing and check each. A fix that trades one dangling row for another is not
      a fix.
    - **Claim-fidelity**: does every comment/doc/PR sentence match the code?
-   - **Control-design** (whenever the change *claims* to prevent / guarantee / enforce /
-     validate — a check, floor, guard, validator, rate-limit, invariant): does it enforce a
-     value the adversary supplies (**trust boundary**), can the adversary *induce* the dependency
-     failure it skips on (**fail-open bypass**), does it check a spoofable proxy instead of the
-     property (**balance-delta ≠ provenance; 200 ≠ success; sim ≠ execution**), and what does it
-     **cost** on the hot path (added RPC / false-rejects)? Line-by-line refute cannot see these —
-     they are *design* flaws, not diff flaws: **[control-review.md](control-review.md)**.
+   - **Control-design** (when the change is a *control* — its worth is a guarantee against a
+     named adversary): trust-the-input, fail-open, an unmediated second path, proxy-not-property,
+     cost, silent-failure — the *design* flaws line-by-line refute can't see:
+     **[control-review.md](control-review.md)**.
 3. **Verify each candidate, recall-biased**: CONFIRMED / PLAUSIBLE / REFUTED against the real
    code. Refute only when constructible — impossible (a constant/type/guard, shown) or
    factually wrong (quote the line). A realistic-but-rare path (error handler, cold cache,
@@ -74,4 +75,5 @@ substantial changes before calling them done, and again whenever the user says "
 Fix real findings and re-verify (implement + gates). Report honestly: what you verified as
 correct (with specifics), the findings + severity, what you fixed, what you accepted on
 purpose. Don't say "all clear" before an in-flight independent pass returns — wait, then
-reconcile.
+reconcile. And before relaying any clean bill, name the *class* of flaw the review could have
+caught: a pass from reviewers who could only see one class validates that class, not the change.
