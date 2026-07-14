@@ -44,9 +44,8 @@ without passing the check. A locked front door is worth nothing while a side doo
 property it cares about, on the actual state it will act on. *Try to break it:* find one state
 where the stand-in looks fine but the real property is false. A row exists, but it's still
 `pending`, not settled. The request count is low, but each request is enormously expensive. Two
-keys match, but they point at different variants. Two strings look equal, but `Alice@x` and
-`alice@x` are different identities. A `200` came back, but nothing was durably committed. An
-account is present, but it was never authorized. Then mind the gap between when you check and when
+strings look equal, but `Alice@x` and `alice@x` are different identities. A `200` came back, but
+nothing was durably committed. An account is present, but it was never authorized. Then mind the gap between when you check and when
 you act: a dry run or simulation is not the real, committed execution. *(STRIDE spoofing;
 time-of-check to time-of-use, CWE-367.)*
 

@@ -1,27 +1,26 @@
 ---
 name: ship-loop
-description: The end-to-end rigor loop for delivering a substantial change you can stand behind — research the approach, converge on the simplest root-cause solution, pin it with a test, implement, adversarially self-audit with independent refute-reviewers, verify with the project's own gates, then branch → PR → wait-for-green → merge → confirm it landed. Use when the user invokes /ship-loop, asks you to audit / harden / verify a change, or asks for a non-trivial change to be done carefully AND shipped (opened as a PR or merged). Not for quick edits, questions, or read-only exploration.
+description: The end-to-end rigor loop for delivering a substantial change you can stand behind — research the approach, converge on the simplest root-cause solution, pin it with a test, implement, verify with the project's own gates, adversarially self-audit with independent refute-reviewers, then branch → PR → wait-for-green → merge → confirm it landed. Use when the user invokes /ship-loop, asks you to audit / harden / verify a change, or asks for a non-trivial change to be done carefully AND shipped (opened as a PR or merged). Not for quick edits, questions, or read-only exploration.
 ---
 
 # Ship-loop
 
 One idea runs through the whole loop, from request to merged: **make a claim, then try to break
-it.**
-
-At every step you'll be tempted to just assert something — "this is the cause," "this fixes it,"
-"this can't be bypassed," "it's clean." An assertion you haven't tried to disprove is only a
-confident guess. So each step below turns a claim into something you could actually watch fail:
-you reproduce the bug instead of theorizing about it, you watch a test fail before you trust it
-passing, you hand the change to reviewers whose only job is to break it. What survives a real
-attempt to break it, you can ship. What you merely asserted, you can't — however sure you feel.
-(This is Karl Popper's *conjecture and refutation*, pointed at shipping code: a claim earns trust
-only by surviving a genuine attempt to prove it wrong.)
+it.** Step after step, you turn something you'd rather just assert into something you can actually
+watch fail — you reproduce the bug instead of theorizing about it, you watch a test fail before
+you trust it passing, you hand the change to reviewers whose only job is to break it. What
+survives a real attempt to break it, you can ship; what you merely asserted, you can't — however
+sure you feel. (This is Karl Popper's *conjecture and refutation*, pointed at shipping code.)
 
 **Scale it to the task** — a one-line fix skips most of this. What's here is the part a capable
 model does *unreliably by default*: the disciplines it tends to skip, not general good manners.
 Two things never bend. A substantial change isn't done until it passes the project's **own gates**
-*and* survives a real attempt to break it. And push, PR, and merge happen on the **user's
-cadence**, never by assumption.
+*and* survives a real attempt to break it. And the outward-facing steps go at the **user's
+cadence**, never by assumption — pushing and opening a PR is the normal end of a "ship it"
+request, but **merging is the hard gate**: when unsure, stop at a green PR and ask.
+
+**Asked only to audit, harden, or verify existing code?** Skip to step 6 — steps 1–5 are for
+building a change you don't have yet.
 
 ## The loop — go back a step whenever you need to; the audit sends you back to implement
 
@@ -41,15 +40,18 @@ cadence**, never by assumption.
 
 3. **Reproduce the problem before you explain it.** For a reported bug, *measure* first: compute
    the actual values, run the real function, print the real state with a throwaway `node -e` or
-   script. Don't theorize from reading the code. This is the first place "make a claim, then break
-   it" bites — the instrument usually names the cause, and a guess usually doesn't.
+   script — don't theorize from reading the code. (Building a feature, not fixing a bug? Same move:
+   pin the intended behavior with a concrete example before you build.) This is the first place
+   "make a claim, then break it" bites — the instrument usually names the cause, and a guess
+   usually doesn't.
 
-4. **Pin the change with a test, then write the fix.** Turn the repro into a test and **watch it
-   fail first.** A test you never saw fail may be pinning nothing. An expected value you pasted
-   from the buggy run — instead of one you worked out independently — will pass no matter what the
-   code does. A test that still passes after you undo the fix is theater; and if its two branches
-   don't force *different* results, it isn't pinning your claim at all. Now make it pass: implement
-   the fix by following the nearest existing pattern in the codebase, and keep the change to **one
+4. **Pin the change with a test, then write the fix.** Turn the repro — or, for a feature, the
+   intended behavior — into a test and **watch it fail first.** A test you never saw fail may be
+   pinning nothing. An expected value you pasted from the buggy run — instead of one you worked out
+   independently — will pass no matter what the code does. A test that still passes after you undo
+   the fix is theater; and if its two branches don't force *different* results, it isn't pinning
+   your claim at all. Now make it pass: implement the fix by following the nearest existing pattern
+   in the codebase — on a branch, never the default one (step 7) — and keep the change to **one
    reviewable idea**. If the bug is really a *pattern*, `grep` for its siblings — the twin
    function, the other caller, the same shape elsewhere — because fixing one of five identical
    sites is a half-fix. A change with no test that goes from failing to passing across it is
@@ -57,8 +59,10 @@ cadence**, never by assumption.
 
 5. **Verify with the project's OWN gates.** Run the full set locally, **cheapest first** —
    typecheck and lint before the slow end-to-end suite — across the whole workspace, not just the
-   file you edited. How to find out what a repo's gates are: **[references/ship.md](references/ship.md)**.
-   A green local run is required before any push.
+   file you edited. **Green gates aren't the same as a working feature:** drive the changed path
+   once in a real run and watch the actual behavior, not just the suite. How to find out what a
+   repo's gates are: **[references/ship.md](references/ship.md)**. A green local run is required
+   before any push.
 
 6. **Try to break your own change — this is the gate, not a formality.** Spawn independent
    reviewers whose job is to **refute** the diff, not admire it; keep the findings that survive;
@@ -73,10 +77,10 @@ cadence**, never by assumption.
 
 7. **Ship on the user's cadence.** branch → commit (let the hooks run) → open the PR → **wait for
    CI to *actually* go green** → merge (squash and delete the branch) → fast-forward local `main`.
-   A red check is often just **generated-artifact drift** — a stale snapshot, lockfile, OpenAPI
-   spec, or generated types file — which you fix by re-running the project's generator, **never by
-   hand-editing** the output. Merge only when you're asked or clearly authorized. PR template, what
-   to do about a failing test, verifying after merge: **[references/ship.md](references/ship.md)**.
+   A red check is often just **generated-artifact drift**, not a real regression — know which
+   before you touch anything. Merge only when you're asked or clearly authorized. PR template,
+   failing-test triage, generated-artifact drift, verifying after merge:
+   **[references/ship.md](references/ship.md)**.
 
 8. **Confirm it landed, and record the one footgun.** "Shipped" is not "works in production" —
    check the deploy and the live behavior. Then write down the non-obvious decision and the single

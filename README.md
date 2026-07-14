@@ -41,8 +41,8 @@ Three references load on demand:
 - [`references/audit.md`](references/audit.md) — the playbook for breaking your own change (refute
   angles, CONFIRMED/PLAUSIBLE/REFUTED, when to stop, fix-vs-accept by proportion).
 - [`references/control-review.md`](references/control-review.md) — the design-level review for a
-  *control* (a change whose worth is a guarantee against someone you can name): does it trust the
-  right input, can they turn it off, is every path covered, does it check the real thing or a
+  *control*: does it trust the right input, can they turn it off, is every path covered, does it
+  check the real thing or a
   stand-in, what does it cost, is a defeat visible. Grounded in Saltzer & Schroeder / the reference
   monitor / STRIDE and framed as falsification — the design flaws that breaking the diff
   line-by-line misses.

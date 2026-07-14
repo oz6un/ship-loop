@@ -29,14 +29,21 @@ sure," "harden," or "check it carefully."
    - **Caller impact**: does a changed signature/return-shape/precondition break a call site?
    - **Concurrency**: construct the exact interleaving of two concurrent actors. A
      read-then-write without a transaction is a TOCTOU — walk it explicitly.
+   - **Scale**: at production row counts, does this add a query-per-row (N+1), an unindexed scan,
+     or an unbounded fetch that small-fixture tests pass right over?
    - **Cascade/cleanup completeness**: for a delete or migration, enumerate *every* row/table
      keyed to the thing and check each. A fix that trades one dangling row for another is not
      a fix.
+   - **Rollout ordering** (schema or persisted-format change): during the deploy window the two
+     halves take effect at different times — does old code tolerate the new data, and new code the
+     old? Never pair a destructive migration with the code that assumes it (expand → backfill →
+     contract); "revert first" can't undo a dropped column.
    - **Claim-fidelity**: does every comment/doc/PR sentence match the code?
-   - **Control-design** (when the change is a *control* — its worth is a guarantee against a
-     named adversary): trust-the-input, fail-open, an unmediated second path, proxy-not-property,
-     cost, silent-failure — the *design* flaws line-by-line refute can't see:
-     **[control-review.md](control-review.md)**.
+   - **Control-design** — *a separate pass, not just another angle in this list.* When the change
+     is a *control* (its worth is a guarantee against a named adversary), the angles above are
+     necessary but **not sufficient**: run the design review in
+     **[control-review.md](control-review.md)**, and don't stop on a dry diff-refute alone — the
+     stop-condition below requires *it* to pass too.
 3. **Verify each candidate against the real code, and when in doubt keep it**: mark each
    CONFIRMED / PLAUSIBLE / REFUTED. Only mark something REFUTED when you can actually show it's
    dead — either the path is impossible (point to the constant, type, or guard that rules it out)
