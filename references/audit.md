@@ -28,6 +28,13 @@ substantial changes before calling them done, and again whenever the user says "
      keyed to the thing and check each. A fix that trades one dangling row for another is not
      a fix.
    - **Claim-fidelity**: does every comment/doc/PR sentence match the code?
+   - **Control-design** (whenever the change *claims* to prevent / guarantee / enforce /
+     validate — a check, floor, guard, validator, rate-limit, invariant): does it enforce a
+     value the adversary supplies (**trust boundary**), can the adversary *induce* the dependency
+     failure it skips on (**fail-open bypass**), does it check a spoofable proxy instead of the
+     property (**balance-delta ≠ provenance; 200 ≠ success; sim ≠ execution**), and what does it
+     **cost** on the hot path (added RPC / false-rejects)? Line-by-line refute cannot see these —
+     they are *design* flaws, not diff flaws: **[control-review.md](control-review.md)**.
 3. **Verify each candidate, recall-biased**: CONFIRMED / PLAUSIBLE / REFUTED against the real
    code. Refute only when constructible — impossible (a constant/type/guard, shown) or
    factually wrong (quote the line). A realistic-but-rare path (error handler, cold cache,
@@ -39,7 +46,10 @@ substantial changes before calling them done, and again whenever the user says "
 ## Stop condition + conflicts
 
 - **Stop** when a round surfaces nothing new, or when refutation is just re-quoting the same
-  guards. An adversarial loop with no bound spins forever — two dry rounds is done.
+  guards. An adversarial loop with no bound spins forever — two dry rounds is done. But for a
+  **control**, two dry refute-the-diff rounds is *not* the end: the design review
+  ([control-review.md](control-review.md)) must also pass, and a same-framed "nothing found" is
+  not validation of the design.
 - **Reconcile conflicts by constructibility, not vote.** A REFUTE that quotes an actual
   line/constant beats a vague CONFIRM; a CONFIRM with a concrete failing input beats a
   hand-wave. When two reviewers disagree, build the case from the code yourself and decide.
@@ -54,6 +64,10 @@ substantial changes before calling them done, and again whenever the user says "
   is care; a silent one is a latent bug.
 - **Never gold-plate.** Code that runs on every request to guard a near-impossible edge is its
   own defect. Matching effort to risk *is* the engineering.
+- **Re-audit the fix itself.** A fix that relaxes a check, widens a bound, or flips a fail-mode
+  (fail-closed → fail-open) can be a *worse* defect than the one it closed — the reviewer who
+  pushed for it saw only the symptom. Run the fix back through the angles above, not just its
+  now-green tests; a fix to a control especially.
 
 ## Close
 

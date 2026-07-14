@@ -22,6 +22,12 @@ unit tests, and the type-check for e2e/integration suites. Run them all green be
 
 - Never commit substantial work on the default branch: `git checkout -b <type>/<slug>`
   (`fix/…`, `feat/…`, `refactor/…`, `docs/…`).
+- **Branch from the *target*, and verify the diff is exactly what you intend.** Cut from the
+  base you'll merge into (`git checkout -b … <target>`), not from whatever happens to be checked
+  out — a branch cut from another feature branch carries *its* commits (often *pre-fix* code)
+  into your PR. Before opening it: `git diff <base>..HEAD --stat` shows only the files you meant
+  and `git log <base>..HEAD` only the commits you meant; if a second concern rode along, it
+  belongs on its own branch.
 - Let the pre-commit hooks run; if they reformat or fail, fix and re-stage — do **not**
   `--no-verify` past a real failure. Warnings in files you didn't touch are pre-existing; a
   warning in *your* file is yours.

@@ -31,9 +31,15 @@ and push/PR/merge happen on the **user's cadence**, never by assumption.
    hypothesizing. The instrument usually names the cause; a guess usually doesn't.
 
 4. **Pin the change with a test, then implement to the grain.** Turn the repro into a test that
-   **fails now**; make it pass by implementing the fix — mirror the nearest existing pattern
-   (the analogous helper/cascade), and keep the diff to **one reviewable concern**. A change
-   with no test that goes red→green across it is asserted, not proven.
+   **fails now** — *watch it go red*: a test you never saw fail may pin nothing, and an expected
+   value pasted from the run (rather than one you reproduced independently) passes by
+   construction. A test that still passes with the fix reverted is theater; one whose two
+   branches don't force *different* outcomes doesn't pin the claim. Make it pass by implementing
+   the fix — mirror the nearest existing pattern (the analogous helper/cascade), and keep the
+   diff to **one reviewable concern**. When the fix is a bug *pattern*, **`grep` for its
+   siblings** (the twin function, the other caller, the same call shape) — a fix applied to one
+   of N identical sites is a half-fix. A change with no test that goes red→green across it is
+   asserted, not proven.
 
 5. **Verify with the project's OWN gates.** Run the FULL set locally, **cheap-first** —
    typecheck + lint before the slow e2e — over the whole workspace, not just the file you
@@ -42,9 +48,14 @@ and push/PR/merge happen on the **user's cadence**, never by assumption.
 
 6. **Audit adversarially — the gate, not a formality.** Spawn independent subagents told to
    **refute** your diff; keep what survives; decide fix-vs-accept by proportion; loop back to
-   step 4 when it's real. The refute angles, the claim-fidelity rule (a doc/PR line that
-   overstates the code is a defect), when to stop, how to reconcile conflicts:
-   **[references/audit.md](references/audit.md)**.
+   step 4 when it's real. **If the change is a *control* — it claims to prevent / guarantee /
+   enforce / validate — refuting the diff is necessary but not sufficient: audit its *design* —
+   does it trust the right input, can the adversary turn it off (fail-open is a bypass if the
+   failure is inducible), does it measure the property or a spoofable proxy, what does it cost on
+   the hot path. A clean pass from same-framed refuters is not validation of a control:
+   **[references/control-review.md](references/control-review.md)**.** The refute angles, the
+   claim-fidelity rule (a doc/PR line that overstates the code is a defect), when to stop, how to
+   reconcile conflicts: **[references/audit.md](references/audit.md)**.
 
 7. **Ship — on the user's cadence.** branch → commit (let the hooks run) → PR → **wait for CI
    to *actually* go green** → merge (squash + delete branch) → fast-forward local `main`. A red

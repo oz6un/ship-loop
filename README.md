@@ -23,13 +23,20 @@ rather than hardcoding any toolchain.
 3. **Reproduce before you theorize** — measure the real values; don't guess.
 4. **Pin the change with a test** (red→green), then implement to the grain.
 5. **Verify with the project's own gates**, cheap-first (typecheck/lint before the slow e2e).
-6. **Audit adversarially** with independent refute-reviewers — the gate.
+6. **Audit adversarially** with independent refute-reviewers — the gate. For a *control* (a
+   change that claims to prevent / guarantee / enforce), also audit its **design** — trust
+   boundary, fail-mode, property-vs-proxy, cost — since a clean refute pass validates the frame,
+   not the design.
 7. **Ship on the user's cadence** — branch → PR → wait-for-*actually*-green → merge → sync.
 8. **Confirm it landed; record the one footgun** a future session could re-introduce.
 
-Two references load on demand:
+Three references load on demand:
 - [`references/audit.md`](references/audit.md) — the adversarial self-audit playbook (refute
   angles, CONFIRMED/PLAUSIBLE/REFUTED, a stop condition, fix-vs-accept by proportion).
+- [`references/control-review.md`](references/control-review.md) — the design-level review for a
+  change that *claims to prevent / guarantee / enforce*: does it trust the right input, can the
+  adversary turn it off (fail-open is a bypass), does it measure the property or a spoofable
+  proxy, what does it cost — the flaws diff-refute systematically misses.
 - [`references/ship.md`](references/ship.md) — project-agnostic ship mechanics (gate discovery,
   a PR template, failing-test triage, generated-artifact-drift, verify-after-merge).
 
